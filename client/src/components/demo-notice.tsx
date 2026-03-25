@@ -35,7 +35,7 @@ export default function DemoNotice() {
       <Alert className="mb-6 border-red-200 bg-red-50">
         <AlertTriangle className="h-4 w-4 text-red-600" />
         <AlertDescription className="text-red-800">
-          <strong>API Connection Issue:</strong> Unable to connect to Upstage APIs. 
+          <strong>API Connection Issue:</strong> Unable to connect to Gemini APIs. 
           Please check your API key configuration or try again later.
         </AlertDescription>
       </Alert>
@@ -47,8 +47,8 @@ export default function DemoNotice() {
       <CheckCircle className="h-4 w-4 text-green-600" />
       <AlertDescription className="text-green-800">
         <strong>Live Demo Mode:</strong> All APIs are connected and functional! 
-        Upload your own documents to test Document Parse, Information Extract, and Solar LLM capabilities.
-        The demos use real Upstage AI services for authentic results.
+        Upload your own documents to test Document Parse, Information Extract, and Gemini Chat capabilities.
+        The demos use real Gemini services for authentic results.
       </AlertDescription>
     </Alert>
   );

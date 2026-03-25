@@ -19,12 +19,11 @@ export default function Navigation() {
   const navItems = [
     { id: 'document-parse', label: 'Document Parse', path: '/#document-parse' },
     { id: 'info-extract', label: 'Information Extract', path: '/#info-extract' },
-    { id: 'solar-llm', label: 'Solar LLM', path: '/#solar-llm' },
+    { id: 'solar-llm', label: 'Gemini Chat', path: '/#solar-llm' },
     { id: 'getting-started', label: 'Getting Started', path: '/#getting-started' },
   ];
 
   const appItems = [
-    { path: '/', label: 'API Demos', icon: Rocket },
     { path: '/contract-analyzer', label: 'Contract Analyzer', icon: FileText },
   ];
 
@@ -33,10 +32,10 @@ export default function Navigation() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
-            <Link href="/">
+            <Link href="/contract-analyzer">
               <div className="text-2xl font-bold text-primary flex items-center cursor-pointer">
                 <Rocket className="mr-2 h-6 w-6" />
-                Upstage AI
+                Smart Contract Analyzer
               </div>
             </Link>
           </div>
@@ -56,7 +55,7 @@ export default function Navigation() {
             ))}
             
             {/* Section Navigation (only on home page) */}
-            {location === '/' && navItems.map((item) => (
+            {location === '/home' && navItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => scrollToSection(item.id)}
@@ -67,7 +66,7 @@ export default function Navigation() {
             ))}
             
             <Button
-              onClick={() => window.open('https://console.upstage.ai', '_blank')}
+              onClick={() => window.open('https://aistudio.google.com/app/apikey', '_blank')}
               className="bg-primary hover:bg-blue-700"
             >
               <ExternalLink className="mr-2 h-4 w-4" />
@@ -98,10 +97,10 @@ export default function Navigation() {
                 ))}
                 
                 {/* Section Navigation (only on home page) */}
-                {location === '/' && (
+                {location === '/home' && (
                   <>
                     <div className="border-t pt-4">
-                      <div className="text-sm font-medium text-gray-500 mb-2">API Demos</div>
+                      <div className="text-sm font-medium text-gray-500 mb-2">Demo Sections</div>
                       {navItems.map((item) => (
                         <button
                           key={item.id}
@@ -116,7 +115,7 @@ export default function Navigation() {
                 )}
                 
                 <Button
-                  onClick={() => window.open('https://console.upstage.ai', '_blank')}
+                  onClick={() => window.open('https://aistudio.google.com/app/apikey', '_blank')}
                   className="bg-primary hover:bg-blue-700 w-full mt-4"
                 >
                   <ExternalLink className="mr-2 h-4 w-4" />

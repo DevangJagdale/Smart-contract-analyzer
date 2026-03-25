@@ -1,4 +1,5 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
+import { useEffect } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -8,9 +9,17 @@ import ContractAnalyzerPage from "@/pages/contract-analyzer";
 import Navigation from "@/components/navigation";
 
 function Router() {
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (window.location.pathname === "/") {
+      setLocation("/contract-analyzer", { replace: true });
+    }
+  }, [setLocation]);
+
   return (
     <Switch>
-      <Route path="/" component={Home} />
+      <Route path="/" component={ContractAnalyzerPage} />
       <Route path="/home" component={Home} />
       <Route path="/contract-analyzer" component={ContractAnalyzerPage} />
       <Route>

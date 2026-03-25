@@ -1,4 +1,4 @@
-// API client for Upstage services
+// API client for Gemini-backed services
 export class APIClient {
   private baseUrl: string;
 
@@ -56,7 +56,7 @@ export class APIClient {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `Solar LLM chat failed: ${response.status}`);
+      throw new Error(errorData.error || `Gemini chat failed: ${response.status}`);
     }
 
     return response.json();

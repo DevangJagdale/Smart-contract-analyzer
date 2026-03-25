@@ -22,7 +22,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              Upstage AI Developer Showcase
+              Smart Contract Analyzer
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-blue-100 max-w-4xl mx-auto">
               Interactive demos showcasing real API integrations for Document Parsing, Information Extraction, 
@@ -69,7 +69,7 @@ export default function Home() {
               </Button>
             </div>
             <p className="mt-4 text-blue-200 text-sm">
-              All demos use live Upstage APIs • Upload your own files • Copy production-ready code
+              All demos use live Gemini APIs • Upload your own files • Copy production-ready code
             </p>
           </div>
         </div>
@@ -276,12 +276,12 @@ const extraction = await api.extractInformation({
               </div>
             </div>
 
-            {/* Solar LLM */}
+            {/* Gemini Chat */}
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div>
                 <div className="inline-flex items-center service-solar-llm rounded-full px-4 py-2 mb-6">
                   <Brain className="h-6 w-6 mr-2" />
-                  <span className="font-semibold">Solar LLM API</span>
+                  <span className="font-semibold">Gemini Chat API</span>
                 </div>
                 <h3 className="text-2xl font-bold mb-4">Advanced Reasoning & Analysis</h3>
                 <p className="text-gray-600 mb-6">
@@ -376,7 +376,7 @@ console.log("Final Analysis:", analysis);`}
             <h2 className="text-3xl font-bold mb-4">Production Implementation Guide</h2>
             <p className="text-gray-300 text-lg max-w-3xl mx-auto">
               Comprehensive technical documentation, best practices, and real-world implementation patterns 
-              for integrating Upstage APIs into production systems
+              for integrating Gemini APIs into production systems
             </p>
           </div>
 
@@ -418,7 +418,7 @@ console.log("Final Analysis:", analysis);`}
             </div>
 
             <div className="bg-gray-800 p-6 rounded-lg">
-              <h3 className="text-xl font-bold mb-4 text-purple-400">Solar LLM Applications</h3>
+              <h3 className="text-xl font-bold mb-4 text-purple-400">Gemini Applications</h3>
               <div className="space-y-4 text-sm">
                 <div>
                   <div className="font-medium text-gray-200">Context Management</div>
@@ -446,7 +446,7 @@ console.log("Final Analysis:", analysis);`}
                   code={`// Service-oriented architecture
 class DocumentProcessingService {
   constructor() {
-    this.upstageClient = new UpstageAPI(process.env.UPSTAGE_API_KEY);
+    this.geminiClient = new GeminiClient(process.env.GEMINI_API_KEY);
     this.redis = new Redis(process.env.REDIS_URL);
     this.queue = new BullQueue('document-processing');
   }
@@ -479,7 +479,7 @@ class DocumentProcessingService {
         case 'extract':
           return await this.extractInformation(fileId);
         case 'analyze':
-          return await this.analyzeWithSolar(fileId);
+          return await this.analyzeWithGemini(fileId);
       }
     } catch (error) {
       await this.handleProcessingError(fileId, error);
@@ -496,9 +496,9 @@ class DocumentProcessingService {
                 <h4 className="text-xl font-bold mb-4 text-green-400">Error Handling & Resilience</h4>
                 <CodeBlock 
                   code={`// Robust error handling and retry logic
-class ResilientUpstageClient {
+class ResilientGeminiClient {
   constructor(apiKey, options = {}) {
-    this.client = new UpstageAPI(apiKey);
+    this.client = new GeminiClient(apiKey);
     this.retryConfig = {
       maxRetries: options.maxRetries || 3,
       baseDelay: options.baseDelay || 1000,
@@ -674,7 +674,7 @@ class ResilientUpstageClient {
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold mb-4">Interactive Live Demos</h2>
             <p className="text-gray-600 text-lg max-w-3xl mx-auto">
-              Test each API with real files and see live results. All demos connect to actual Upstage APIs 
+              Test each API with real files and see live results. All demos connect to actual Gemini APIs 
               for authentic testing experience. Upload your own documents or use our curated samples.
             </p>
           </div>
@@ -692,7 +692,7 @@ class ResilientUpstageClient {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
             <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-              Start building with Upstage AI in minutes. Get $10 credit on signup and access to all three capabilities.
+              Start building with Smart Contract Analyzer in minutes. Get free-tier access on signup and access to all three capabilities.
             </p>
           </div>
 
@@ -726,7 +726,7 @@ class ResilientUpstageClient {
             <CardContent className="p-8 text-center">
               <h3 className="text-2xl font-bold mb-4">Start Your AI Journey Today</h3>
               <p className="text-blue-100 mb-6 max-w-2xl mx-auto">
-                Join thousands of developers building intelligent applications with Upstage AI. 
+                Join thousands of developers building intelligent applications with Smart Contract Analyzer. 
                 Our comprehensive APIs make document processing and AI integration simple and powerful.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -734,7 +734,7 @@ class ResilientUpstageClient {
                   size="lg"
                   variant="secondary"
                   className="bg-white text-primary hover:bg-gray-100"
-                  onClick={() => window.open('https://console.upstage.ai', '_blank')}
+                  onClick={() => window.open('https://aistudio.google.com/app/apikey', '_blank')}
                 >
                   <Rocket className="mr-2 h-5 w-5" />
                   Get Started Free
@@ -743,7 +743,7 @@ class ResilientUpstageClient {
                   size="lg"
                   variant="outline"
                   className="bg-white text-primary hover:bg-gray-100"
-                  onClick={() => window.open('https://console.upstage.ai/docs', '_blank')}
+                  onClick={() => window.open('https://ai.google.dev/gemini-api/docs', '_blank')}
                 >
                   <ExternalLink className="mr-2 h-5 w-5" />
                   View Documentation
@@ -763,7 +763,7 @@ class ResilientUpstageClient {
             <div>
               <div className="text-2xl font-bold text-primary mb-4 flex items-center">
                 <Rocket className="mr-2 h-6 w-6" />
-                Upstage AI
+                Smart Contract Analyzer
               </div>
               <p className="text-gray-400 text-sm">
                 Transforming documents with AI. Three powerful capabilities in one comprehensive platform.
@@ -775,33 +775,33 @@ class ResilientUpstageClient {
               <ul className="space-y-2 text-sm text-gray-400">
                 <li><button onClick={() => scrollToSection('document-parse')} className="hover:text-green-400 transition-colors">Document Parse</button></li>
                 <li><button onClick={() => scrollToSection('info-extract')} className="hover:text-yellow-400 transition-colors">Information Extract</button></li>
-                <li><button onClick={() => scrollToSection('solar-llm')} className="hover:text-purple-400 transition-colors">Solar LLM</button></li>
+                <li><button onClick={() => scrollToSection('solar-llm')} className="hover:text-purple-400 transition-colors">Gemini Chat</button></li>
               </ul>
             </div>
             
             <div>
               <h4 className="font-semibold mb-4">Resources</h4>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="https://console.upstage.ai/docs" className="hover:text-white transition-colors">Documentation</a></li>
-                <li><a href="https://console.upstage.ai/docs/api-reference" className="hover:text-white transition-colors">API Reference</a></li>
-                <li><a href="https://console.upstage.ai/playground" className="hover:text-white transition-colors">Playground</a></li>
-                <li><a href="https://console.upstage.ai/docs/tutorials" className="hover:text-white transition-colors">Tutorials</a></li>
+                <li><a href="https://ai.google.dev/gemini-api/docs" className="hover:text-white transition-colors">Documentation</a></li>
+                <li><a href="https://ai.google.dev/gemini-api/docs/api-overview" className="hover:text-white transition-colors">API Reference</a></li>
+                <li><a href="https://aistudio.google.com/" className="hover:text-white transition-colors">Playground</a></li>
+                <li><a href="https://ai.google.dev/gemini-api/docs/quickstart" className="hover:text-white transition-colors">Tutorials</a></li>
               </ul>
             </div>
             
             <div>
               <h4 className="font-semibold mb-4">Community</h4>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="https://github.com/upstage-ai" className="hover:text-white transition-colors">GitHub</a></li>
-                <li><a href="https://discord.gg/upstage" className="hover:text-white transition-colors">Discord</a></li>
-                <li><a href="https://stackoverflow.com/questions/tagged/upstage" className="hover:text-white transition-colors">Stack Overflow</a></li>
-                <li><a href="https://console.upstage.ai/support" className="hover:text-white transition-colors">Support</a></li>
+                <li><a href="https://github.com/google-gemini" className="hover:text-white transition-colors">GitHub</a></li>
+                <li><a href="https://discuss.ai.google.dev/" className="hover:text-white transition-colors">Community Forum</a></li>
+                <li><a href="https://stackoverflow.com/questions/tagged/google-gemini" className="hover:text-white transition-colors">Stack Overflow</a></li>
+                <li><a href="https://ai.google.dev/gemini-api/docs/troubleshooting" className="hover:text-white transition-colors">Support</a></li>
               </ul>
             </div>
           </div>
           
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400 text-sm">
-            <p>&copy; 2024 Upstage AI. All rights reserved. Built for developers who demand excellence.</p>
+            <p>&copy; 2024 Smart Contract Analyzer. Built for developers who demand excellence.</p>
           </div>
         </div>
       </footer>

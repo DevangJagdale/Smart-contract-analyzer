@@ -93,59 +93,28 @@ export default function InformationExtractDemo() {
     setExtractResult(null);
 
     try {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64 = (reader.result as string).split(",")[1];
+      const formData = new FormData();
+      formData.append("document", file);
+      formData.append("schema", JSON.stringify(schemas[selectedDocType as keyof typeof schemas]));
 
-        const payload = {
-          model: "information-extract",
-          messages: [
-            {
-              role: "user",
-              content: [
-                {
-                  type: "image_url",
-                  image_url: {
-                    url: `data:application/octet-stream;base64,${base64}`,
-                  },
-                },
-              ],
-            },
-          ],
-          response_format: {
-            type: "json_schema",
-            json_schema: {
-              name: "document_schema",
-              schema: schemas[selectedDocType as keyof typeof schemas],
-            },
-          },
-        };
+      const response = await fetch("/api/information-extract", {
+        method: "POST",
+        body: formData,
+      });
 
-        const response = await fetch("https://api.upstage.ai/v1/information-extraction/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: "Bearer up_DYMaQNy182Y6aGaRJNQxXnvTcQ5di",
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.details || "Failed to extract information");
+      }
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to extract information from Upstage");
-        }
+      const result = await response.json();
+      const content = result.choices?.[0]?.message?.content;
+      setExtractResult(typeof content === "string" ? JSON.parse(content) : content);
 
-        const result = await response.json();
-        const content = result.choices[0].message.content;
-        setExtractResult(typeof content === "string" ? JSON.parse(content) : content);
-
-        toast({
-          title: "Information extracted successfully!",
-          description: "Data has been structured according to your schema",
-        });
-      };
-
-      reader.readAsDataURL(file);
+      toast({
+        title: "Information extracted successfully!",
+        description: "Data has been structured according to your schema",
+      });
     } catch (error) {
       console.error("Information extract error:", error);
       toast({
@@ -297,7 +266,7 @@ export default function InformationExtractDemo() {
               <div className="mt-4 p-4 bg-blue-50 rounded-lg">
                 <div className="flex items-center space-x-2">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                  <span className="text-sm text-blue-700">Extracting information with Upstage API...</span>
+                  <span className="text-sm text-blue-700">Extracting information with Gemini API...</span>
                 </div>
               </div>
             )}

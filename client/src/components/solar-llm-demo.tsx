@@ -46,7 +46,7 @@
 //     setIsLoading(true);
 
 //     try {
-//       const response = await fetch("https://upstage-ai.onrender.com/api/solar-chat", {
+//       const response = await fetch("/api/solar-chat", {
 //         method: "POST",
 //         headers: { "Content-Type": "application/json" },
 //         body: JSON.stringify({
@@ -65,7 +65,7 @@
 
 //       if (!response.ok) {
 //         const errorData = await response.json();
-//         throw new Error(errorData.error || "Failed to get response from Solar LLM");
+//         throw new Error(errorData.error || "Failed to get response from Gemini");
 //       }
 
 //       const result = await response.json();
@@ -80,10 +80,10 @@
 //       setChatMessages((prev) => [...prev, aiMessage]);
 //       toast({
 //         title: "Response received",
-//         description: "Solar LLM has analyzed your question",
+//         description: "Gemini has analyzed your question",
 //       });
 //     } catch (error) {
-//       console.error("Solar LLM error:", error);
+//       console.error("Gemini error:", error);
 
 //       const errorMessage = {
 //         type: "ai" as const,
@@ -96,7 +96,7 @@
 //       setChatMessages((prev) => [...prev, errorMessage]);
 //       toast({
 //         title: "Error",
-//         description: "Failed to get response from Solar LLM",
+//         description: "Failed to get response from Gemini",
 //         variant: "destructive",
 //       });
 //     } finally {
@@ -149,7 +149,7 @@
 //         <div className="inline-flex items-center justify-center w-16 h-16 service-solar-llm rounded-full text-2xl mb-4">
 //           <Brain className="h-8 w-8" />
 //         </div>
-//         <h2 className="text-3xl font-bold mb-4">Solar LLM Demo</h2>
+//         <h2 className="text-3xl font-bold mb-4">Gemini Chat Demo</h2>
 //         <p className="text-gray-600 text-lg max-w-2xl mx-auto">
 //           Advanced reasoning and contextual understanding for document-based Q&A and complex analysis
 //         </p>
@@ -211,7 +211,7 @@
 //             <div className="flex justify-start">
 //               <div className="bg-white border border-gray-300 p-3 rounded-lg shadow-sm flex items-center gap-2">
 //                 <div className="h-4 w-4 border-b-2 border-purple-600 rounded-full animate-spin"></div>
-//                 <span className="text-sm text-gray-600">Solar LLM is thinking...</span>
+//                 <span className="text-sm text-gray-600">Gemini is thinking...</span>
 //               </div>
 //             </div>
 //           )}
@@ -393,17 +393,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MessageSquare, Brain, Clock, Send, Lightbulb, FileText, Rocket } from "lucide-react";
 
-// Direct Solar LLM API integration - everything in one component
+// API integration through backend proxy
 const callSolarLLMAPI = async (messages, reasoningEffort) => {
   try {
-    const response = await fetch("https://api.upstage.ai/v1/chat/completions", {
+    const response = await fetch("/api/solar-chat", {
       method: "POST",
       headers: {
-        "Authorization": "Bearer up_DYMaQNy182Y6aGaRJNQxXnvTcQ5di",
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "solar-pro2-preview",
         messages: messages,
         reasoning_effort: reasoningEffort || "high",
         stream: false
@@ -411,13 +409,13 @@ const callSolarLLMAPI = async (messages, reasoningEffort) => {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error?.message || `API request failed with status ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || errorData.details || `API request failed with status ${response.status}`);
     }
 
     return await response.json();
   } catch (error) {
-    console.error("Solar LLM API Error:", error);
+    console.error("Gemini API Error:", error);
     throw error;
   }
 };
@@ -458,7 +456,7 @@ export default function SolarLLMDemo() {
     setIsLoading(true);
 
     try {
-      // Direct API call to Solar LLM
+      // Direct API call to Gemini
       const result = await callSolarLLMAPI([
         {
           role: "system",
@@ -476,7 +474,7 @@ export default function SolarLLMDemo() {
 
       setChatMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
-      console.error("Solar LLM error:", error);
+      console.error("Gemini error:", error);
 
       const errorMessage = {
         type: "ai" as const,
@@ -535,19 +533,15 @@ export default function SolarLLMDemo() {
   const codeExamples = {
     python: `import requests
 
-# Solar LLM API Integration
-def query_solar_llm(messages, reasoning_effort="high"):
-    url = "https://api.upstage.ai/v1/chat/completions"
+# Gemini API Integration
+def query_gemini(messages):
+  url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=YOUR_API_KEY"
     headers = {
-        "Authorization": "Bearer YOUR_API_KEY",
         "Content-Type": "application/json"
     }
     
     payload = {
-        "model": "solar-pro2-preview",
-        "messages": messages,
-        "reasoning_effort": reasoning_effort,
-        "stream": False
+    "contents": [{"role": "user", "parts": [{"text": messages[-1]["content"]}]}]
     }
     
     response = requests.post(url, json=payload, headers=headers)
@@ -559,22 +553,18 @@ messages = [
     {"role": "user", "content": "Analyze this contract for key risks."}
 ]
 
-result = query_solar_llm(messages, "high")
+result = query_gemini(messages)
 print(result['choices'][0]['message']['content'])`,
     
-    javascript: `// Solar LLM API Integration
-async function querySolarLLM(messages, reasoningEffort = "high") {
-    const response = await fetch("https://api.upstage.ai/v1/chat/completions", {
+  javascript: `// Gemini API Integration
+async function queryGemini(messages) {
+  const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=YOUR_API_KEY", {
         method: "POST",
         headers: {
-            "Authorization": "Bearer YOUR_API_KEY",
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            model: "solar-pro2-preview",
-            messages: messages,
-            reasoning_effort: reasoningEffort,
-            stream: false
+      contents: [{ role: "user", parts: [{ text: messages[messages.length - 1].content }] }]
         })
     });
     
@@ -587,17 +577,16 @@ const messages = [
     { role: "user", content: "What are the key terms in this agreement?" }
 ];
 
-querySolarLLM(messages, "high")
+queryGemini(messages)
     .then(result => console.log(result.choices[0].message.content));`,
     
-    langchain: `from langchain_upstage import ChatUpstage
+  langchain: `from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
-# Initialize Solar LLM
-llm = ChatUpstage(
-    api_key="YOUR_API_KEY",
-    model="solar-pro2-preview",
-    reasoning_effort="high"
+# Initialize Gemini model
+llm = ChatGoogleGenerativeAI(
+  google_api_key="YOUR_API_KEY",
+  model="gemini-2.5-flash"
 )
 
 # Create message chain
@@ -612,10 +601,10 @@ print(response.content)
 
 # For document Q&A with retrieval
 from langchain_community.vectorstores import FAISS
-from langchain_upstage import UpstageEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 # Create vector store for documents
-embeddings = UpstageEmbeddings()
+embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
 vectorstore = FAISS.from_documents(documents, embeddings)
 
 # Create retrieval chain
@@ -638,7 +627,7 @@ print(result['result'])`
         <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-600 to-purple-800 rounded-full text-2xl mb-4">
           <Brain className="h-8 w-8 text-white" />
         </div>
-        <h2 className="text-3xl font-bold mb-4">Solar LLM Demo</h2>
+        <h2 className="text-3xl font-bold mb-4">Gemini Chat Demo</h2>
         <p className="text-gray-600 text-lg max-w-2xl mx-auto">
           Advanced reasoning and contextual understanding for document-based Q&A and complex analysis
         </p>
@@ -701,7 +690,7 @@ print(result['result'])`
               <div className="flex justify-start">
                 <div className="bg-white border border-gray-300 p-3 rounded-lg shadow-sm flex items-center gap-2">
                   <div className="h-4 w-4 border-b-2 border-purple-600 rounded-full animate-spin"></div>
-                  <span className="text-sm text-gray-600">Solar LLM is thinking...</span>
+                  <span className="text-sm text-gray-600">Gemini is thinking...</span>
                 </div>
               </div>
             )}

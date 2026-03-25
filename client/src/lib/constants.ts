@@ -2,7 +2,7 @@ export const DOCUMENT_PARSE_EXAMPLES = {
   python: `import requests
 import base64
 
-API_KEY = "UPSTAGE_API_KEY"
+API_KEY = "GEMINI_API_KEY"
 
 def parse_document(file_path):
     with open(file_path, 'rb') as file:
@@ -11,7 +11,7 @@ def parse_document(file_path):
         headers = {"Authorization": f"Bearer {API_KEY}"}
         
         response = requests.post(
-            "https://api.upstage.ai/v1/document-digitization",
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=GEMINI_API_KEY",
             headers=headers,
             data=data,
             files=files
@@ -26,7 +26,7 @@ def parse_document(file_path):
 result = parse_document("document.pdf")
 print(result["elements"])`,
 
-  javascript: `const API_KEY = "UPSTAGE_API_KEY";
+  javascript: `const API_KEY = "GEMINI_API_KEY";
 
 async function parseDocument(fileInput) {
     const formData = new FormData();
@@ -34,7 +34,7 @@ async function parseDocument(fileInput) {
     formData.append('model', 'document-parse');
     
     const response = await fetch(
-        'https://api.upstage.ai/v1/document-digitization',
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + API_KEY,
         {
             method: 'POST',
             headers: {
@@ -62,8 +62,8 @@ document.getElementById('fileInput').addEventListener('change', async (e) => {
     }
 });`,
 
-  curl: `curl -X POST "https://api.upstage.ai/v1/document-digitization" \\
-  -H "Authorization: Bearer UPSTAGE_API_KEY" \\
+  curl: `curl -X POST "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=GEMINI_API_KEY" \\
+  -H "Content-Type: application/json" \\
   -F "document=@document.pdf" \\
   -F "model=document-parse"`,
 
@@ -72,8 +72,8 @@ import java.net.http.*;
 import java.nio.file.*;
 
 public class DocumentParser {
-    private static final String API_KEY = "UPSTAGE_API_KEY";
-    private static final String API_URL = "https://api.upstage.ai/v1/document-digitization";
+    private static final String API_KEY = "GEMINI_API_KEY";
+    private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + API_KEY;
     
     public static String parseDocument(String filePath) throws Exception {
         HttpClient client = HttpClient.newHttpClient();
@@ -115,8 +115,7 @@ import json
 from openai import OpenAI
 
 client = OpenAI(
-    api_key="UPSTAGE_API_KEY",
-    base_url="https://api.upstage.ai/v1/information-extraction"
+    api_key="GEMINI_API_KEY"
 )
 
 def encode_file_to_base64(file_path):
@@ -158,13 +157,13 @@ response = client.chat.completions.create(
 result = json.loads(response.choices[0].message.content)
 print(result)`,
 
-  javascript: `const API_KEY = "UPSTAGE_API_KEY";
+  javascript: `const API_KEY = "GEMINI_API_KEY";
 
 async function extractInformation(file, schema) {
     const base64Data = await fileToBase64(file);
     
     const response = await fetch(
-        'https://api.upstage.ai/v1/information-extraction/chat/completions',
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + API_KEY,
         {
             method: 'POST',
             headers: {
@@ -219,8 +218,8 @@ const schema = {
     }
 };`,
 
-  curl: `curl -X POST "https://api.upstage.ai/v1/information-extraction/chat/completions" \\
-  -H "Authorization: Bearer UPSTAGE_API_KEY" \\
+  curl: `curl -X POST "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=GEMINI_API_KEY" \\
+  -H "Content-Type: application/json" \\
   -H "Content-Type: application/json" \\
   -d '{
     "model": "information-extract",
@@ -253,8 +252,7 @@ export const SOLAR_LLM_EXAMPLES = {
   python: `from openai import OpenAI
 
 client = OpenAI(
-    api_key="UPSTAGE_API_KEY",
-    base_url="https://api.upstage.ai/v1"
+    api_key="GEMINI_API_KEY"
 )
 
 def chat_with_reasoning(question, document_context=""):
@@ -295,17 +293,17 @@ chat_with_reasoning(
     document_text
 )`,
 
-  javascript: `const API_KEY = "UPSTAGE_API_KEY";
+  javascript: `const API_KEY = "GEMINI_API_KEY";
 
-async function chatWithSolarLLM(question, documentContext = "") {
-    const response = await fetch('https://api.upstage.ai/v1/chat/completions', {
+async function chatWithGemini(question, documentContext = "") {
+  const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + API_KEY, {
         method: 'POST',
         headers: {
             'Authorization': \`Bearer \${API_KEY}\`,
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            model: "solar-pro2-preview",
+            model: "gemini-2.5-flash",
             messages: [
                 {
                     role: "system",
@@ -344,18 +342,17 @@ async function chatWithSolarLLM(question, documentContext = "") {
 
 // Usage
 const documentContext = "CONTRACT: Total $2,500.00, Net 30 payment terms...";
-chatWithSolarLLM("Analyze the payment terms", documentContext);`,
+chatWithGemini("Analyze the payment terms", documentContext);`,
 
   langchain: `from langchain_openai import ChatOpenAI
 from langchain.schema import HumanMessage, SystemMessage
 from langchain.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-# Initialize Solar LLM through LangChain
+# Initialize Gemini through LangChain
 llm = ChatOpenAI(
-    model="solar-pro2-preview",
-    openai_api_key="UPSTAGE_API_KEY",
-    openai_api_base="https://api.upstage.ai/v1",
+    model="gemini-2.5-flash",
+    openai_api_key="GEMINI_API_KEY",
     model_kwargs={"reasoning_effort": "high"}
 )
 

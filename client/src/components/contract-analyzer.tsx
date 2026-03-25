@@ -25,9 +25,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://upstage-ai-demoserver.onrender.com' 
-  : 'http://localhost:8000';
+const API_BASE_URL = "";
 
 interface ContractAnalysis {
   documentText: string;
@@ -267,7 +265,7 @@ export default function ContractAnalyzer() {
 
       setCurrentStep('analyzing');
 
-      // Step 2: Comprehensive contract analysis using Solar LLM
+      // Step 2: Comprehensive contract analysis using Gemini
       const analysisPrompt = `
 You are an expert legal contract analyst with extensive experience in contract law, risk assessment, and business negotiations. Analyze the following contract document comprehensively and provide detailed insights.
 
@@ -367,11 +365,12 @@ Focus on practical business implications and provide insights that would help in
             }
           ],
           reasoningEffort: 'high',
+          responseFormat: 'json',
           stream: false,
         }),
       });
 
-      console.log('Solar LLM API Response Status:', analysisResponse.status, analysisResponse.statusText);
+      console.log('Gemini API Response Status:', analysisResponse.status, analysisResponse.statusText);
 
       // Check for non-JSON response
       const analysisContentType = analysisResponse.headers.get('content-type');
@@ -388,11 +387,23 @@ Focus on practical business implications and provide insights that would help in
 
       const analysisResult = await analysisResponse.json();
       console.log('Raw analysis response:', analysisResult);
+      if (analysisResult.parsed && typeof analysisResult.parsed === 'object') {
+        const parsedAnalysis = validateAnalysis(analysisResult.parsed, documentText);
+        setAnalysis(parsedAnalysis);
+        setCurrentStep('complete');
+
+        toast({
+          title: "Contract Analysis Complete!",
+          description: "Your contract has been comprehensively analyzed with AI-powered insights.",
+        });
+        return;
+      }
+
       const analysisContent = analysisResult.choices?.[0]?.message?.content;
 
       if (!analysisContent) {
         console.error('No content in analysis response:', analysisResult);
-        throw new Error('No analysis content returned from Solar LLM');
+        throw new Error('No analysis content returned from Gemini');
       }
 
       // Parse the JSON response
@@ -470,7 +481,7 @@ Focus on practical business implications and provide insights that would help in
         </h1>
         <p className="text-xl text-gray-600 max-w-3xl mx-auto">
           Upload any legal contract and get comprehensive AI analysis including contract type identification, 
-          party details, financial terms, risk assessment, and actionable insights powered by Upstage AI.
+          party details, financial terms, risk assessment, and actionable insights powered by Smart Contract Analyzer.
         </p>
       </div>
 
@@ -549,8 +560,8 @@ Focus on practical business implications and provide insights that would help in
             </h3>
             <p className="text-gray-600">
               {currentStep === 'parsing' 
-                ? 'Extracting text and structure from your document using Upstage Document Parse API'
-                : 'Performing comprehensive AI-powered legal analysis using Upstage Solar LLM with advanced reasoning'
+                ? 'Extracting text and structure from your document using Gemini document parsing'
+                : 'Performing comprehensive AI-powered legal analysis using Gemini with advanced reasoning'
               }
             </p>
           </CardContent>

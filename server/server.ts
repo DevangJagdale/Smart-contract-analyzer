@@ -8,7 +8,7 @@ const app = express();
 const upload = multer();
 const PORT = 4000;
 
-const API_KEY = "up_DYMaQNy182Y6aGaRJNQxXnvTcQ5di";
+const API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
 
 app.use(cors());
 

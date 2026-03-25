@@ -24,7 +24,7 @@ app.use(cors({
 }));
 app.use(express.json());
 
-const apiKey = process.env.UPSTAGE_API_KEY || "up_DYMaQNy182Y6aGaRJNQxXnvTcQ5di";
+const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
 console.log("Upstage API Key configured:", apiKey ? "✓" : "✗");
 
 // Document Parse endpoint

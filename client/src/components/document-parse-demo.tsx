@@ -23,10 +23,10 @@ export default function DocumentParseDemo() {
 
   const handleFileUpload = async (file: File) => {
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("document", file);
 
     try {
-      const response = await fetch("https://upstage-ai-server.onrender.com/api/parse-document", {
+      const response = await fetch("/api/document-parse", {
         method: "POST",
         body: formData,
       });
@@ -36,11 +36,12 @@ export default function DocumentParseDemo() {
       }
 
       const result = await response.json();
+      const firstElement = result?.elements?.[0]?.content;
 
       setOutputFormat("json");
       setSampleOutputs({
-        html: result.output?.html || "No HTML output",
-        markdown: result.output?.markdown || "No Markdown output",
+        html: firstElement?.html || "No HTML output",
+        markdown: firstElement?.markdown || firstElement?.text || "No Markdown output",
         json: JSON.stringify(result, null, 2),
       });
     } catch (err: any) {

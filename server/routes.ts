@@ -3,271 +3,403 @@ import { createServer, type Server } from "http";
 import cors from "cors";
 import multer from "multer";
 import fetch from "node-fetch";
-import FormData from "form-data";
 import express from "express";
 
-const upload = multer({ 
+const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 50 * 1024 * 1024 // 50MB limit
-  }
+    fileSize: 50 * 1024 * 1024,
+  },
 });
 
+type ChatMessage = {
+  role: "user" | "assistant" | "system";
+  content:
+    | string
+    | Array<{
+        type: "text" | "image_url";
+        text?: string;
+        image_url?: {
+          url: string;
+        };
+      }>;
+};
+
+type GeminiPart =
+  | { text: string }
+  | { inlineData: { mimeType: string; data: string } };
+
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const GEMINI_FALLBACK_MODELS = (process.env.GEMINI_FALLBACK_MODELS || "gemini-2.5-flash-lite,gemini-3.1-flash-lite,gemini-3-flash")
+  .split(",")
+  .map((model) => model.trim())
+  .filter(Boolean);
+
+function getGeminiApiKey() {
+  return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
+}
+
+function extractJsonFromText(text: string): any {
+  const cleaned = text
+    .replace(/```json\s*/gi, "")
+    .replace(/```\s*/g, "")
+    .trim();
+
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    const objectMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (objectMatch) {
+      return JSON.parse(objectMatch[0]);
+    }
+
+    const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
+    if (arrayMatch) {
+      return JSON.parse(arrayMatch[0]);
+    }
+  }
+
+  return null;
+}
+
+function dataUrlToInlineData(dataUrl: string): { mimeType: string; data: string } | null {
+  const match = dataUrl.match(/^data:(.*?);base64,(.*)$/);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    mimeType: match[1] || "application/octet-stream",
+    data: match[2],
+  };
+}
+
+function mapOpenAIToGemini(messages: ChatMessage[]) {
+  const systemMessages: string[] = [];
+  const contents: Array<{ role: "user" | "model"; parts: GeminiPart[] }> = [];
+
+  for (const message of messages) {
+    if (message.role === "system") {
+      if (typeof message.content === "string" && message.content.trim()) {
+        systemMessages.push(message.content.trim());
+      }
+      continue;
+    }
+
+    const parts: GeminiPart[] = [];
+
+    if (typeof message.content === "string") {
+      parts.push({ text: message.content });
+    } else {
+      for (const part of message.content) {
+        if (part.type === "text" && part.text) {
+          parts.push({ text: part.text });
+        }
+        if (part.type === "image_url" && part.image_url?.url) {
+          const inlineData = dataUrlToInlineData(part.image_url.url);
+          if (inlineData) {
+            parts.push({ inlineData });
+          }
+        }
+      }
+    }
+
+    if (parts.length > 0) {
+      contents.push({
+        role: message.role === "assistant" ? "model" : "user",
+        parts,
+      });
+    }
+  }
+
+  return {
+    systemInstruction: systemMessages.join("\n\n").trim() || undefined,
+    contents,
+  };
+}
+
+async function callGemini(options: {
+  contents: Array<{ role: "user" | "model"; parts: GeminiPart[] }>;
+  systemInstruction?: string;
+  temperature?: number;
+  responseMimeType?: "application/json" | "text/plain";
+  maxOutputTokens?: number;
+}) {
+  const apiKey = getGeminiApiKey();
+  if (!apiKey) {
+    throw new Error("Missing GEMINI_API_KEY (or GOOGLE_API_KEY)");
+  }
+
+  const modelsToTry = [GEMINI_MODEL, ...GEMINI_FALLBACK_MODELS.filter((model) => model !== GEMINI_MODEL)];
+  const failureMessages: string[] = [];
+
+  for (const model of modelsToTry) {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: options.contents,
+          systemInstruction: options.systemInstruction
+            ? {
+                parts: [{ text: options.systemInstruction }],
+              }
+            : undefined,
+          generationConfig: {
+            temperature: options.temperature ?? 0.2,
+            responseMimeType: options.responseMimeType,
+            maxOutputTokens: options.maxOutputTokens,
+          },
+        }),
+      },
+    );
+
+    const rawBody = await response.text();
+    let data: any = {};
+    try {
+      data = rawBody ? JSON.parse(rawBody) : {};
+    } catch {
+      data = {};
+    }
+
+    if (response.ok) {
+      const text =
+        data?.candidates?.[0]?.content?.parts
+          ?.map((part: { text?: string }) => part.text || "")
+          .join("\n")
+          .trim() || "";
+
+      return {
+        text,
+        usageMetadata: data?.usageMetadata,
+        raw: data,
+      };
+    }
+
+    const message = data?.error?.message || rawBody || `Gemini request failed with ${response.status}`;
+    failureMessages.push(`${model}: ${message}`);
+
+    const isQuotaError = /quota|rate limit|RESOURCE_EXHAUSTED|free_tier/i.test(message);
+    if (!isQuotaError) {
+      throw new Error(message);
+    }
+  }
+
+  throw new Error(
+    `Gemini quota exceeded for all configured models. ` +
+      `Enable billing or use a key/project with quota. Tried: ${modelsToTry.join(", ")}. ` +
+      `Details: ${failureMessages.join(" | ")}`,
+  );
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
-  app.use(cors({
-    origin: process.env.NODE_ENV === 'production' 
-      ? 'https://upstage-ai.onrender.com' 
-      : ['http://localhost:3000', 'http://localhost:8000', 'http://127.0.0.1:8000'],
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-  }));
+  app.use(
+    cors({
+      origin:
+        process.env.NODE_ENV === "production"
+          ? true
+          : ["http://localhost:3000", "http://localhost:8000", "http://127.0.0.1:8000"],
+      methods: ["GET", "POST"],
+      allowedHeaders: ["Content-Type", "Authorization"],
+    }),
+  );
   app.use(express.json());
 
-  const apiKey = process.env.UPSTAGE_API_KEY || "up_DYMaQNy182Y6aGaRJNQxXnvTcQ5di";
-  console.log("Upstage API Key configured:", apiKey ? "✓" : "✗");
-
   // Document Parse endpoint
-  app.post("/api/document-pars", upload.single('document'), async (req, res) => {
+  app.post("/api/document-parse", upload.single("document"), async (req, res) => {
     try {
-      console.log("Document parse request received");
-      
       if (!req.file) {
-        console.log("No file provided");
         return res.status(400).json({ error: "No document file provided" });
       }
 
-      console.log("File details:", {
-        name: req.file.originalname,
-        size: req.file.size,
-        type: req.file.mimetype
+      const parsePrompt = `You are a document parser.
+Extract the document content and return ONLY valid JSON with this exact structure:
+{
+  "html": "HTML representation of the content",
+  "markdown": "Markdown representation of the content",
+  "text": "Plain text representation of the content"
+}
+If you cannot produce html/markdown faithfully, still return best-effort values.`;
+
+      const geminiResult = await callGemini({
+        systemInstruction: "Return strict JSON only.",
+        contents: [
+          {
+            role: "user",
+            parts: [
+              { text: parsePrompt },
+              {
+                inlineData: {
+                  mimeType: req.file.mimetype || "application/octet-stream",
+                  data: req.file.buffer.toString("base64"),
+                },
+              },
+            ],
+          },
+        ],
       });
 
-      // Create FormData for the API request
-      const formData = new FormData();
-      formData.append('document', req.file.buffer, {
-        filename: req.file.originalname || 'document',
-        contentType: req.file.mimetype
+      const parsed = extractJsonFromText(geminiResult.text);
+      const text = parsed?.text || geminiResult.text || "";
+      const markdown = parsed?.markdown || text;
+      const html = parsed?.html || `<pre>${text.replace(/[&<>]/g, (char: string) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[char] as string))}</pre>`;
+
+      return res.json({
+        elements: [
+          {
+            category: "document",
+            content: {
+              html,
+              markdown,
+              text,
+            },
+            id: 0,
+            page: 1,
+          },
+        ],
       });
-      formData.append('model', 'document-parse');
-      formData.append('output_formats', JSON.stringify(["html", "markdown", "text"]));
-
-      console.log("Making request to Upstage API...");
-      
-      const response = await fetch('https://api.upstage.ai/v1/document-digitization', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: formData
-      });
-
-      console.log("Upstage API response status:", response.status);
-
-      // Log raw response body for debugging
-      const responseBody = await response.text();
-      console.log("Upstage API raw response:", responseBody);
-
-      if (!response.ok) {
-        console.error("Upstage API error:", response.status, responseBody);
-        return res.status(response.status).json({ 
-          error: "Upstage API request failed", 
-          details: responseBody || "No response body"
-        });
-      }
-
-      // Attempt to parse JSON
-      let result;
-      try {
-        result = JSON.parse(responseBody);
-      } catch (parseError) {
-        console.error("Failed to parse Upstage API response as JSON:", parseError);
-        return res.status(500).json({ 
-          error: "Invalid response from Upstage API", 
-          details: "Response is not valid JSON: " + responseBody
-        });
-      }
-
-      console.log("Document parse successful, elements count:", result.elements?.length || 0);
-      res.json(result);
     } catch (error) {
-      console.error("Document parse error:", error);
-      res.status(500).json({ 
-        error: "Failed to parse document", 
-        details: error instanceof Error ? error.message : "Unknown error"
+      return res.status(500).json({
+        error: "Failed to parse document",
+        details: error instanceof Error ? error.message : "Unknown error",
       });
     }
   });
 
   // Information Extract endpoint
-  app.post("/api/information-extrac", upload.single('document'), async (req, res) => {
+  app.post("/api/information-extract", upload.single("document"), async (req, res) => {
     try {
-      console.log("Information extract request received");
-      
       if (!req.file) {
         return res.status(400).json({ error: "No document file provided" });
       }
 
       const { schema } = req.body;
-      
       if (!schema) {
         return res.status(400).json({ error: "No schema provided" });
       }
 
-      console.log("File details:", {
-        name: req.file.originalname,
-        size: req.file.size,
-        type: req.file.mimetype
+      const schemaObject = typeof schema === "string" ? JSON.parse(schema) : schema;
+
+      const extractionPrompt = `Extract structured information from this document.
+Return ONLY valid JSON matching this JSON schema:
+${JSON.stringify(schemaObject, null, 2)}
+
+Rules:
+- Do not add explanations.
+- Do not wrap with markdown fences.
+- If a field is missing, use null or an empty array/object as appropriate.`;
+
+      const geminiResult = await callGemini({
+        systemInstruction: "You are a precise data extraction assistant. Return strict JSON only.",
+        contents: [
+          {
+            role: "user",
+            parts: [
+              { text: extractionPrompt },
+              {
+                inlineData: {
+                  mimeType: req.file.mimetype || "application/octet-stream",
+                  data: req.file.buffer.toString("base64"),
+                },
+              },
+            ],
+          },
+        ],
       });
 
-      // Convert file to base64 using Node.js Buffer
-      const base64Data = req.file.buffer.toString('base64');
-      
-      const requestBody = {
-        model: 'information-extract',
-        messages: [{
-          role: 'user',
-          content: [{
-            type: 'image_url',
-            image_url: {
-              url: `data:${req.file.mimetype};base64,${base64Data}`
-            }
-          }]
-        }],
-        response_format: {
-          type: 'json_schema',
-          json_schema: {
-            name: 'extraction_schema',
-            schema: JSON.parse(schema)
-          }
-        }
-      };
+      const extracted = extractJsonFromText(geminiResult.text);
+      const content = extracted ? JSON.stringify(extracted) : geminiResult.text;
 
-      console.log("Making request to Upstage Information Extract API...");
-
-      const response = await fetch('https://api.upstage.ai/v1/information-extraction/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
+      return res.json({
+        choices: [
+          {
+            message: {
+              role: "assistant",
+              content,
+            },
+            finish_reason: "stop",
+          },
+        ],
+        usage: {
+          prompt_tokens: geminiResult.usageMetadata?.promptTokenCount || 0,
+          completion_tokens: geminiResult.usageMetadata?.candidatesTokenCount || 0,
+          total_tokens: geminiResult.usageMetadata?.totalTokenCount || 0,
         },
-        body: JSON.stringify(requestBody)
       });
-
-      console.log("Upstage API response status:", response.status);
-
-      // Log raw response body for debugging
-      const responseBody = await response.text();
-      console.log("Upstage API raw response:", responseBody);
-
-      if (!response.ok) {
-        console.error("Upstage API error:", response.status, responseBody);
-        return res.status(response.status).json({ 
-          error: "Upstage API request failed", 
-          details: responseBody || "No response body"
-        });
-      }
-
-      // Attempt to parse JSON
-      let result;
-      try {
-        result = JSON.parse(responseBody);
-      } catch (parseError) {
-        console.error("Failed to parse Upstage API response as JSON:", parseError);
-        return res.status(500).json({ 
-          error: "Invalid response from Upstage API", 
-          details: "Response is not valid JSON: " + responseBody
-        });
-      }
-
-      console.log("Information extract successful");
-      res.json(result);
     } catch (error) {
-      console.error("Information extract error:", error);
-      res.status(500).json({ 
-        error: "Failed to extract information", 
-        details: error instanceof Error ? error.message : "Unknown error"
+      return res.status(500).json({
+        error: "Failed to extract information",
+        details: error instanceof Error ? error.message : "Unknown error",
       });
     }
   });
 
-  // Solar LLM Chat endpoint
-  app.post("/api/solar-cha", async (req, res) => {
+  // Chat endpoint (kept as /api/solar-chat for frontend compatibility)
+  app.post("/api/solar-chat", async (req, res) => {
     try {
-      console.log("Solar LLM chat request received");
-      
-      const { messages, reasoningEffort = 'medium', stream = false } = req.body;
+      const { messages, responseFormat } = req.body as {
+        messages: ChatMessage[];
+        reasoningEffort?: string;
+        stream?: boolean;
+        responseFormat?: "json" | "text";
+      };
 
       if (!messages || !Array.isArray(messages)) {
         return res.status(400).json({ error: "Invalid messages format" });
       }
 
-      console.log("Messages count:", messages.length);
-      console.log("Reasoning effort:", reasoningEffort);
+      const mapped = mapOpenAIToGemini(messages);
+      if (mapped.contents.length === 0) {
+        return res.status(400).json({ error: "No valid message content provided" });
+      }
 
-      const requestBody = {
-        model: 'solar-pro2-preview',
-        messages: messages,
-        reasoning_effort: reasoningEffort,
-        stream: stream,
-        temperature: 0.1,
-        max_tokens: 4000
-      };
-
-      console.log("Making request to Upstage Solar LLM API...");
-
-      const response = await fetch('https://api.upstage.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
+      const geminiResult = await callGemini({
+        contents: mapped.contents,
+        systemInstruction: mapped.systemInstruction,
+        temperature: 0.2,
+        responseMimeType: responseFormat === "json" ? "application/json" : "text/plain",
+        maxOutputTokens: responseFormat === "json" ? 8192 : 4096,
       });
 
-      console.log("Upstage API response status:", response.status);
+      const parsed = responseFormat === "json" ? extractJsonFromText(geminiResult.text) : null;
 
-      // Log raw response body for debugging
-      const responseBody = await response.text();
-      console.log("Upstage API raw response:", responseBody);
-
-      if (!response.ok) {
-        console.error("Upstage API error:", response.status, responseBody);
-        return res.status(response.status).json({ 
-          error: "Upstage API request failed", 
-          details: responseBody || "No response body"
-        });
-      }
-
-      // Attempt to parse JSON
-      let result;
-      try {
-        result = JSON.parse(responseBody);
-      } catch (parseError) {
-        console.error("Failed to parse Upstage API response as JSON:", parseError);
-        return res.status(500).json({ 
-          error: "Invalid response from Upstage API", 
-          details: "Response is not valid JSON: " + responseBody
-        });
-      }
-
-      console.log("Solar LLM chat successful");
-      res.json(result);
+      return res.json({
+        choices: [
+          {
+            message: {
+              role: "assistant",
+              content: geminiResult.text,
+            },
+            finish_reason: "stop",
+          },
+        ],
+        usage: {
+          prompt_tokens: geminiResult.usageMetadata?.promptTokenCount || 0,
+          completion_tokens: geminiResult.usageMetadata?.candidatesTokenCount || 0,
+          total_tokens: geminiResult.usageMetadata?.totalTokenCount || 0,
+        },
+        parsed,
+      });
     } catch (error) {
-      console.error("Solar LLM chat error:", error);
-      res.status(500).json({ 
-        error: "Failed to chat with Solar LLM", 
-        details: error instanceof Error ? error.message : "Unknown error"
+      return res.status(500).json({
+        error: "Failed to chat with Gemini",
+        details: error instanceof Error ? error.message : "Unknown error",
       });
     }
   });
 
-  // Health check endpoint
-  app.get("/api/health", (req, res) => {
-    res.json({ 
-      status: "ok", 
-      upstageApiConfigured: !!apiKey,
+  app.get("/api/health", (_req, res) => {
+    const apiKey = getGeminiApiKey();
+    res.json({
+      status: "ok",
+      geminiApiConfigured: !!apiKey,
       apiKey: apiKey ? `${apiKey.substring(0, 8)}...` : "not configured",
-      timestamp: new Date().toISOString()
+      model: GEMINI_MODEL,
+      fallbackModels: GEMINI_FALLBACK_MODELS,
+      timestamp: new Date().toISOString(),
     });
   });
 
