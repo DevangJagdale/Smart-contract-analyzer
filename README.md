@@ -1,4 +1,4 @@
-# 🚀 Upstage AI Demo Showcase: Smart Contract Analysis Platform
+# 🚀 Smart Contract Analysis Platform
 
 [![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-Visit_Site-blue?style=for-the-badge)]([https://upstage-ai.onrender.com/](https://smart-contract-analyzer.onrender.com))
 
@@ -6,7 +6,7 @@
 
 ## For testing demo I have uploaded sample contract please feel free to use that
 
-> A comprehensive, beginner-friendly demonstration of Upstage AI's enterprise-grade capabilities, showcasing a **Smart Contract Analysis Platform** that transforms legal contract review with AI-powered automation. Built with clear explanations, interactive examples, and step-by-step guidance to help developers of all skill levels understand and implement powerful AI document processing solutions.
+> A comprehensive, beginner-friendly demonstration of enterprise grade capabilities, showcasing a **Smart Contract Analysis Platform** that transforms legal contract review with AI powered automation. Built with clear explanations, interactive examples, and step-by-step guidance to help developers of all skill levels understand and implement powerful AI document processing solutions.
 
 ## What this project does
 
