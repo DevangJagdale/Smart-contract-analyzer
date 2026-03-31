@@ -1,6 +1,6 @@
 # 🚀 Smart Contract Analysis Platform
 
-[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-Visit_Site-blue?style=for-the-badge)]([https://upstage-ai.onrender.com/](https://smart-contract-analyzer.onrender.com))
+(https://smart-contract-analyzer.onrender.com)
 
 ## !!! I am running my website on free services offered by Render, but when there’s no traffic, the server goes to sleep. Each time I use it, the service starts again, which can take up to a minute to get back online. Please be patient!!!
 
